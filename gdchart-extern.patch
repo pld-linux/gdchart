@@ -1,0 +1,159 @@
+--- gdchart0.11.4dev/gdc.c.orig	Tue Mar 11 04:03:06 2003
++++ gdchart0.11.4dev/gdc.c	Wed Jul  2 14:49:39 2003
+@@ -13,6 +13,13 @@
+ 											    (gdFontPtr)NULL, 16, 8,
+ 											    (gdFontPtr)NULL, 15, 9 };
+ 
++/* EXTERNDs */
++GDC_image_type_t	GDC_image_type		= GDC_PNG;
++int			GDC_jpeg_quality	= -1;		/* 0-95 */
++char			GDC_generate_img	= TRUE;
++GDC_HOLD_IMAGE_T	GDC_hold_img		= GDC_DESTROY_IMAGE;
++void			*GDC_image		= (void*)NULL;	/* in/out */
++
+ /* ------------------------------------------------------------------- *\ 
+  * convert from enum GDC_font_size to gd fonts
+  * for now load them all
+--- gdchart0.11.4dev/gdc.h.orig	Tue Mar 11 04:03:06 2003
++++ gdchart0.11.4dev/gdc.h	Wed Jul  2 14:48:11 2003
+@@ -131,8 +131,8 @@
+ #define DEFAULTO(val)
+ extern struct	GDC_FONT_T	GDC_fontc[];
+ #else
+-#define EXTERND
+-#define DEFAULTO(val) = val
++#define EXTERND extern
++#define DEFAULTO(val)
+ #endif
+ 
+ /**** COMMON OPTIONS ********************************/
+--- gdchart0.11.4dev/gdc_pie.c.orig	Sun Mar 23 21:34:29 2003
++++ gdchart0.11.4dev/gdc_pie.c	Wed Jul  2 15:01:04 2003
+@@ -22,6 +22,34 @@
+ 
+ /* rem circle:  x = rcos(@), y = rsin(@)	*/
+ 
++/* EXTERNDs */
++unsigned long		GDCPIE_BGColor		= 0x000000L;	/* black */
++unsigned long		GDCPIE_PlotColor	= 0xC0C0C0L;	/* gray */
++unsigned long		GDCPIE_LineColor	= GDC_DFLTCOLOR;
++unsigned long		GDCPIE_EdgeColor	= GDC_NOCOLOR;	/* edging on/off */
++char			GDCPIE_other_threshold	= -1;
++unsigned short		GDCPIE_3d_angle		= 45;		/* 0-360 */
++unsigned short		GDCPIE_3d_depth		= 10;		/* % image width */
++unsigned short		GDCPIE_perspective	= 0;		/* % view */
++char			*GDCPIE_title		= NULL;		/* NLs ok here */
++enum GDC_font_size	GDCPIE_title_size	= GDC_MEDBOLD;
++enum GDC_font_size	GDCPIE_label_size	= GDC_SMALL;
++#ifdef HAVE_LIBFREETYPE
++char			*GDCPIE_title_font	= NULL;
++char			*GDCPIE_label_font	= NULL;
++double			GDCPIE_title_ptsize	= 0.0;
++double			GDCPIE_label_ptsize	= 0.0;
++#endif
++int			GDCPIE_label_dist	= 1+8/2;	/* 1+GDC_fontc[GDCPIE_label_size].h/2 */
++unsigned char		GDCPIE_label_line	= FALSE;	/* from label to slice */
++int			*GDCPIE_explode		= (int*)NULL;	/* [num_points] */
++								/* [num_points] supercedes GDCPIE_PlotColor */
++unsigned long		*GDCPIE_Color		= (unsigned long*)NULL;
++unsigned char		*GDCPIE_missing		= (unsigned char*)NULL;	/* TRUE/FALSE */
++GDCPIE_PCT_TYPE		GDCPIE_percent_labels	= GDCPIE_PCT_NONE;
++char			*GDCPIE_percent_fmt	= "%.0f%%";	/* printf fmt'ing */
++
++
+ extern struct	GDC_FONT_T	GDC_fontc[];
+ 
+ #define SET_RECT( gdp, x1, x2, y1, y2 )	gdp[0].x = gdp[3].x = x1,	\
+--- gdchart0.11.4dev/gdchart.c.orig	Tue Mar 11 04:03:06 2003
++++ gdchart0.11.4dev/gdchart.c	Wed Jul  2 15:00:55 2003
+@@ -20,6 +20,90 @@
+ #define LOWSET		1
+ #define CLOSESET	2
+ 
++/* EXTERNDs */
++char			*GDC_ytitle;
++char			*GDC_xtitle;
++char			*GDC_ytitle2;				/* ostesibly: volume label */
++char			*GDC_title;				/* NLs ok here */
++enum GDC_font_size	GDC_title_size		= GDC_MEDBOLD;
++enum GDC_font_size	GDC_ytitle_size		= GDC_MEDBOLD;
++enum GDC_font_size	GDC_xtitle_size		= GDC_MEDBOLD;
++enum GDC_font_size	GDC_yaxisfont_size	= GDC_SMALL;
++enum GDC_font_size	GDC_xaxisfont_size	= GDC_SMALL;
++double			GDC_xaxis_angle		= 90.0;		/* 0,90. FT: 0-90 */
++#ifdef HAVE_LIBFREETYPE
++char			*GDC_title_font		= NULL;
++char			*GDC_ytitle_font	= NULL;
++char			*GDC_xtitle_font	= NULL;
++char			*GDC_yaxis_font		= NULL;
++char			*GDC_xaxis_font		= NULL;
++double			GDC_title_ptsize	= 0.0;
++double			GDC_ytitle_ptsize	= 0.0;
++double			GDC_xtitle_ptsize	= 0.0;
++double			GDC_yaxis_ptsize	= 0.0;
++double			GDC_xaxis_ptsize	= 0.0;
++#endif
++char			*GDC_ylabel_fmt		= NULL;		/* printf fmt'ing, e.g.: "%.2f" */
++char			*GDC_ylabel2_fmt	= NULL;		/* default: "%.0f" future: fractions */
++char			*GDC_xlabel_ctl		= NULL;		/* num_points[] TRUE,FALSE */
++short			GDC_xlabel_spacing	= 5;		/* pixels  SHRT_MAX means force all */
++char			GDC_ylabel_density	= 80;		/* % */
++char			GDC_interpolations	= FALSE;	/* GDC_INTERP_VALUE in data */
++float			GDC_requested_ymin	= GDC_NOVALUE;
++float			GDC_requested_ymax	= GDC_NOVALUE;
++float			GDC_requested_yinterval	= GDC_NOVALUE;
++char			GDC_0Shelf		= TRUE;		/* if applicable */
++GDC_TICK_T		GDC_grid		= GDC_TICK_LABELS;
++GDC_TICK_T		GDC_ticks		= GDC_TICK_LABELS;
++char			GDC_xaxis		= TRUE;
++char			GDC_yaxis		= TRUE;
++char			GDC_yaxis2		= TRUE;
++char			GDC_yval_style		= TRUE;
++GDC_STACK_T		GDC_stack_type		= GDC_STACK_DEPTH;
++float			GDC_3d_depth		= 5.0;		/* % img size */
++unsigned char		GDC_3d_angle		= 45;		/* 1-89 */
++unsigned char		GDC_bar_width		= 75;		/* % (1-100) */
++GDC_HLC_STYLE_T		GDC_HLC_style		= GDC_HLC_CLOSE_CONNECTED;
++unsigned char		GDC_HLC_cap_width	= 25;		/* % (1-100) */
++GDC_ANNOTATION_T	*GDC_annotation		= (GDC_ANNOTATION_T*)NULL;
++enum GDC_font_size	GDC_annotation_font_size = GDC_SMALL;
++#ifdef HAVE_LIBFREETYPE
++char			*GDC_annotation_font	= NULL;
++double			GDC_annotation_ptsize	= 0.0;
++#endif
++int			GDC_num_scatter_pts	= 0;
++GDC_SCATTER_T		*GDC_scatter		= (GDC_SCATTER_T*)NULL;
++char			GDC_thumbnail		= FALSE;
++char			*GDC_thumblabel;
++float			GDC_thumbval		= -FLT_MAX;
++GDC_BORDER_T		GDC_border		= GDC_BORDER_ALL;
++unsigned long		GDC_BGColor		= 0x000000L;	 /* black */
++unsigned long		GDC_GridColor		= 0xA0A0A0L;	 /* gray */
++unsigned long		GDC_LineColor		= GDC_DFLTCOLOR;
++unsigned long		GDC_PlotColor		= GDC_DFLTCOLOR;
++unsigned long		GDC_VolColor		= 0xA0A0FFL;	 /* lgtblue1 */
++unsigned long		GDC_TitleColor		= GDC_DFLTCOLOR; /* "opposite" of BG */
++unsigned long		GDC_XTitleColor		= GDC_DFLTCOLOR;
++unsigned long		GDC_YTitleColor		= GDC_DFLTCOLOR;
++unsigned long		GDC_YTitle2Color	= GDC_DFLTCOLOR;
++unsigned long		GDC_XLabelColor		= GDC_DFLTCOLOR;
++unsigned long		GDC_YLabelColor		= GDC_DFLTCOLOR;
++unsigned long		GDC_YLabel2Color	= GDC_DFLTCOLOR;
++						/* supercedes VolColor	ulong_color[num_points] */
++unsigned long		*GDC_ExtVolColor	= (unsigned long*)NULL;
++						/* supercedes LineColor	ulong_color[num_sets] */
++unsigned long		*GDC_SetColor		= (unsigned long*)NULL;
++						/* supercedes SetColor	ulong_color[num_sets][num_points] */
++unsigned long		*GDC_ExtColor		= (unsigned long*)NULL;
++char			GDC_transparent_bg	= FALSE;
++char			*GDC_BGImage		= (char*)NULL;
++char			GDC_hard_size		= FALSE;
++int			GDC_hard_xorig		= 0;		/* in/out */
++int			GDC_hard_graphwidth	= 0;		/* in/out */
++int			GDC_hard_yorig		= 0;		/* in/out */
++int			GDC_hard_grapheight	= 0;		/* in/out */
++
++
+ /* scaled translation onto graph */
+ #define PX( x )		(int)( xorig + (setno*xdepth_3D) + (x)*xscl )
+ #define PY( y )		(int)( yorig - (setno*ydepth_3D) + (y)*yscl )
