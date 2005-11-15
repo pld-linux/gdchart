@@ -1,5 +1,5 @@
---- gdchart0.11.4dev/makefile.orig	Tue Mar 11 04:03:06 2003
-+++ gdchart0.11.4dev/makefile	Wed Jul  2 13:53:07 2003
+--- gdchart0.11.5dev/Makefile.orig	Tue Mar 11 04:03:06 2003
++++ gdchart0.11.5dev/Makefile	Wed Jul  2 13:53:07 2003
 @@ -6,11 +6,11 @@
  # ----- build path -----
  GDC_INCL=./
@@ -15,18 +15,19 @@
  
  # INCLUDEDIRS=-I. -I/usr/include/freetype2 -I/usr/include/X11 -I/usr/X11R6/include/X11 -I/usr/local/include 
  
-@@ -18,9 +18,8 @@
+@@ -18,9 +18,9 @@
  # GDChart requires the gd library - www.boutell.com/gd/
- # libgd 1.8.4 or better is required.  Don't use 2.0.0
+ # gd 2.0.28 or better is required (GIF support has returned to libgd)
  # if it's not installed in a standard location edit these lines for your installation
--GD_INCL=../gd-1.8.4/
--GD_LD=../gd-1.8.4/
--GD_LIB=libgd.a
-+GD_INCL=/usr/include
+-GD_INCL=/usr/local/include/
+-GD_LD=/usr/local/lib/
+-GD_LIB=libgd.so
++GD_INCL=/usr/include/
++GD_LD=/usr/lib/
 +GD_LIB=-lgd
- # if you're using gd2.x, use these lines
- # (it's typically built as a shared lib)
- # GD_INCL  = ../gd-2.0.0/
+ # a static libgd is also available
+ # GD_LIB=libgd.a
+ 
 @@ -66,7 +65,7 @@
  # LIB_PATHS = $(LIB_PATHS) -Xlinker -rpath -Xlinker $(PNG_LD) -Xlinker -rpath -Xlinker $(ZLIB_LD)
  
@@ -36,7 +37,7 @@
  
  # --- compile the samples ---
  gdc_pie_samp.o: $(GDC_INCL)gdc.h $(GDC_INCL)gdcpie.h gdc_pie_samp.c
-@@ -82,57 +81,55 @@
+@@ -79,54 +79,51 @@
  	$(CC) $(CFLAGS) -I$(GDC_INCL) $(DEFS) -c ft_samp.c
  
  # --- link the samples ---
@@ -51,7 +52,7 @@
  
 -gdc_samp2: $(GDC_LD)libgdc.a gdc_samp2.o $(GD_LD)/$(GD_LIB) $(GDC_LD)/$(GDC_LIB)
 -	$(CC) -o gdc_samp2 \
--			 gdc.o gdchart.o price_conv.o gifencode.o \
+-			 gdc.o gdchart.o price_conv.o \
 +gdc_samp2: $(GDC_LD)libgdc.la gdc_samp2.o
 +	libtool --mode=link $(CC) -o gdc_samp2 \
  			 gdc_samp2.o \
@@ -61,7 +62,7 @@
  
 -gdc_pie_samp: $(GDC_LD)libgdc.a gdc_pie_samp.o $(GD_LD)/$(GD_LIB) $(GDC_LD)/$(GDC_LIB)
 -	$(CC) -o gdc_pie_samp \
--			 gdc.o gdc_pie.o price_conv.o gifencode.o \
+-			 gdc.o gdc_pie.o price_conv.o \
 +gdc_pie_samp: $(GDC_LD)libgdc.la gdc_pie_samp.o
 +	libtool --mode=link $(CC) -o gdc_pie_samp \
  			 gdc_pie_samp.o \
@@ -71,7 +72,7 @@
  
 -ft_samp: $(GDC_LD)libgdc.a ft_samp.o $(GD_LD)/$(GD_LIB) $(GDC_LD)/$(GDC_LIB)
 -	$(CC) -o ft_samp \
--			 gdc.o gdchart.o price_conv.o gifencode.o \
+-			 gdc.o gdchart.o price_conv.o \
 +ft_samp: $(GDC_LD)libgdc.la ft_samp.o
 +	libtool --mode=link $(CC) -o ft_samp \
  			 ft_samp.o \
@@ -80,13 +81,8 @@
 +			 libgdc.la -lgd -lz -lpng $(LIBS) -lm
  
  # --- compile the lib ---
--gdc.h: $(GD_INCL)gd.h $(GD_INCL)gdfonts.h $(GD_INCL)gdfontt.h $(GD_INCL)gdfontmb.h $(GD_INCL)gdfontg.h $(GD_INCL)gdfontl.h $(GDC_INCL)gifencode.h $(GDC_INCL)array_alloc.h
-+gdc.h: $(GDC_INCL)gifencode.h $(GDC_INCL)array_alloc.h
- 
--gifencode.o: gifencode.c gifencode.h $(GDC_INCL)gdc.h
--	$(CC) $(CFLAGS) -I$(GD_INCL) -c gifencode.c
-+gifencode.lo: gifencode.c gifencode.h $(GDC_INCL)gdc.h
-+	libtool --mode=compile $(CC) $(CFLAGS) -I$(GD_INCL) -c gifencode.c
+-gdc.h: $(GD_INCL)gd.h $(GD_INCL)gdfonts.h $(GD_INCL)gdfontt.h $(GD_INCL)gdfontmb.h $(GD_INCL)gdfontg.h $(GD_INCL)gdfontl.h $(GDC_INCL)array_alloc.h
++gdc.h: $(GDC_INCL)array_alloc.h
  
 -price_conv.o: price_conv.c
 -	$(CC) $(CFLAGS) -c price_conv.c
@@ -113,30 +109,29 @@
 +array_alloc.lo: array_alloc.c array_alloc.h
 +	libtool --mode=compile $(CC) $(CFLAGS) -c array_alloc.c
  
--libgdc.a: gifencode.o price_conv.o gdc.o gdc_pie.o gdchart.o array_alloc.o
--	ar cr libgdc.a gdc.o gdchart.o gdc_pie.o price_conv.o gifencode.o array_alloc.o
+-libgdc.a: price_conv.o gdc.o gdc_pie.o gdchart.o array_alloc.o
+-	ar cr libgdc.a gdc.o gdchart.o gdc_pie.o price_conv.o array_alloc.o
 -	ranlib libgdc.a
-+# gifencode.lo not always needed (depends on GIF support in libgd)
-+libgdc.la: $(GIFENCODE_LO) price_conv.lo gdc.lo gdc_pie.lo gdchart.lo array_alloc.lo
++libgdc.la: price_conv.lo gdc.lo gdc_pie.lo gdchart.lo array_alloc.lo
 +	libtool --mode=link $(CC) $(LDFLAGS) -o libgdc.la -rpath $(PREFIX_LIB) -lgd \
-+		gdc.lo gdchart.lo gdc_pie.lo price_conv.lo $(GIFENCODE_LO) array_alloc.lo
++	gdc.lo gdchart.lo gdc_pie.lo price_conv.lo array_alloc.lo
  
  # --- supporting libraries ---
  # should be compile & installed separately
-@@ -140,11 +140,12 @@
+@@ -134,11 +131,12 @@
  # 	cd $(GD_LD) ; make -f Makefile $(GD_LIB)
  
  # ----- install -----
--install: gdc.h gdchart.h gdcpie.h gifencode.h libgdc.a
--	cp gdc.h  gdchart.h  gdcpie.h  gifencode.h $(PREFIX_INC)/
+-install: gdc.h gdchart.h gdcpie.h libgdc.a
+-	cp gdc.h  gdchart.h  gdcpie.h $(PREFIX_INC)/
 -	cp libgdc.a $(PREFIX_LIB)/
-+install: gdc.h gdchart.h gdcpie.h gifencode.h libgdc.la
++install: gdc.h gdchart.h gdcpie.h libgdc.la
 +	install -d $(DESTDIR)$(PREFIX_INC) $(DESTDIR)$(PREFIX_LIB)
-+	cp gdc.h  gdchart.h  gdcpie.h  $(GIFENCODE_H) $(DESTDIR)$(PREFIX_INC)
++	cp gdc.h  gdchart.h  gdcpie.h  $(DESTDIR)$(PREFIX_INC)
 +	libtool --mode=install install libgdc.la $(DESTDIR)$(PREFIX_LIB)
  
  # --- clean ---
  clean:
 -	rm -f *.o *.a gdc_samp1 gdc_samp2 gdc_pie_samp ft_samp
-+	rm -f *.o *.la gdc_samp1 gdc_samp2 gdc_pie_samp ft_samp
++	rm -f *.lo *.la gdc_samp1 gdc_samp2 gdc_pie_samp ft_samp
  
