@@ -29,7 +29,7 @@ Oparta na GD biblioteka do wykresów.
 Summary:	Header files for gdchart library
 Summary(pl):	Pliki nag³ówkowe biblioteki gdchart
 Group:		Development/Libraries
-Requires:	%{name} = %{version}
+Requires:	%{name} = %{version}-%{release}
 
 %description devel
 Header files for gdchart library.
@@ -41,7 +41,7 @@ Pliki nag³ówkowe biblioteki gdchart.
 Summary:	Static gdchart library
 Summary(pl):	Statyczna biblioteka gdchart
 Group:		Development/Libraries
-Requires:	%{name}-devel = %{version}
+Requires:	%{name}-devel = %{version}-%{release}
 
 %description static
 Static gdchart library.
