@@ -1,5 +1,5 @@
 Summary:	GD-based chart library
-Summary(pl.UTF-8):   Oparta na GD biblioteka do wykresów
+Summary(pl.UTF-8):	Oparta na GD biblioteka do wykresów
 Name:		gdchart
 Version:	0.11.5
 Release:	1
@@ -27,7 +27,7 @@ Oparta na GD biblioteka do wykresów.
 
 %package devel
 Summary:	Header files for gdchart library
-Summary(pl.UTF-8):   Pliki nagłówkowe biblioteki gdchart
+Summary(pl.UTF-8):	Pliki nagłówkowe biblioteki gdchart
 Group:		Development/Libraries
 Requires:	%{name} = %{version}-%{release}
 
@@ -39,7 +39,7 @@ Pliki nagłówkowe biblioteki gdchart.
 
 %package static
 Summary:	Static gdchart library
-Summary(pl.UTF-8):   Statyczna biblioteka gdchart
+Summary(pl.UTF-8):	Statyczna biblioteka gdchart
 Group:		Development/Libraries
 Requires:	%{name}-devel = %{version}-%{release}
 
